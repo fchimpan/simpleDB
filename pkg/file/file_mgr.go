@@ -20,7 +20,9 @@ func NewFileMgr(dbDirectory string, blockSize int) (*FileMgr, error) {
 	info, err := os.Stat(dbDirectory)
 	if os.IsNotExist(err) {
 		isNew = true
-		os.MkdirAll(dbDirectory, 0755)
+		if err := os.MkdirAll(dbDirectory, 0755); err != nil {
+			return nil, err
+		}
 	} else if err != nil {
 		return nil, err
 	} else {
