@@ -43,7 +43,7 @@ func TestFileMgr(t *testing.T) {
 		blkID, err := fm.Append(fileName)
 		require.NoError(t, err, "Append failed")
 
-		blockNum, err := fm.blockNum(fileName)
+		blockNum, err := fm.BlockNum(fileName)
 		require.NoError(t, err, "blockNum failed")
 		assert.Equal(t, 1, blockNum, "expected blockNum to be 1")
 

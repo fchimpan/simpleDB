@@ -11,7 +11,7 @@ type FileMgr struct {
 	dbDirectory string
 	blockSize   int
 	isNew       bool
-	openFiles   map[string]*os.File
+	openFiles   map[string]*os.File // ファイルをキャッシュしておく
 	mu          sync.Mutex
 }
 
@@ -58,6 +58,7 @@ func (fm *FileMgr) Read(blk *BlockID, p *Page) error {
 	return nil
 }
 
+// p の内容を blk に書き込む
 func (fm *FileMgr) Write(blk *BlockID, p *Page) error {
 	fm.mu.Lock()
 	defer fm.mu.Unlock()
@@ -83,24 +84,24 @@ func (fm *FileMgr) Append(fileName string) (*BlockID, error) {
 	fm.mu.Lock()
 	defer fm.mu.Unlock()
 
-	size, err := fm.blockNum(fileName)
+	size, err := fm.BlockNum(fileName)
 	if err != nil {
-		return &BlockID{}, err
+		return nil, err
 	}
 
 	blkID := NewBlockID(fileName, size)
 
 	f, err := fm.getFile(blkID.fileName)
 	if err != nil {
-		return &BlockID{}, err
+		return nil, err
 	}
 
 	if _, err := f.Seek(int64(blkID.Number()*fm.blockSize), 0); err != nil {
-		return &BlockID{}, err
+		return nil, err
 	}
 
 	if _, err := f.Write(make([]byte, fm.blockSize)); err != nil {
-		return &BlockID{}, err
+		return nil, err
 	}
 
 	return blkID, nil
@@ -123,7 +124,8 @@ func (fm *FileMgr) getFile(fileName string) (*os.File, error) {
 
 }
 
-func (fm *FileMgr) blockNum(fileName string) (int, error) {
+// fileのブロック数
+func (fm *FileMgr) BlockNum(fileName string) (int, error) {
 	f, err := fm.getFile(fileName)
 	if err != nil {
 		return 0, err
@@ -134,7 +136,7 @@ func (fm *FileMgr) blockNum(fileName string) (int, error) {
 		return 0, err
 	}
 
-	return int(info.Size()) / fm.blockSize, nil
+	return int(info.Size()) / fm.BlockSize(), nil
 }
 
 func (fm *FileMgr) IsNew() bool {
