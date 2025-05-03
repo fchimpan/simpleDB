@@ -6,6 +6,10 @@ import (
 	"unicode/utf8"
 )
 
+const (
+	HeaderSize = 4
+)
+
 // A Page object holds the contents of a disk block.
 type Page struct {
 	bb *bytes.Buffer
@@ -20,23 +24,29 @@ func NewPageFromBytes(b []byte) *Page {
 }
 
 func (p *Page) GetInt(offset int) int {
-	return int(binary.BigEndian.Uint32(p.bb.Bytes()[offset : offset+4]))
+	return int(binary.BigEndian.Uint32(p.bb.Bytes()[offset : offset+HeaderSize]))
 }
 
 func (p *Page) SetInt(offset int, value int) {
-	binary.BigEndian.PutUint32(p.bb.Bytes()[offset:offset+4], uint32(value))
+	binary.BigEndian.PutUint32(p.bb.Bytes()[offset:offset+HeaderSize], uint32(value))
 }
 
+// 先頭4バイトはデータ長
 func (p *Page) GetBytes(offset int) []byte {
 	len := p.GetInt(offset)
-	s := offset + 4
+	s := offset + HeaderSize
 	e := s + len
 	return p.bb.Bytes()[s:e]
 }
 
+// GetBytesAtPosition は特定の位置から指定された長さのバイト列を取得します
+func (p *Page) GetBytesAtPosition(pos int, length int) []byte {
+	return p.bb.Bytes()[pos : pos+length]
+}
+
 func (p *Page) SetBytes(offset int, b []byte) {
 	p.SetInt(offset, len(b))
-	copy(p.bb.Bytes()[offset+4:], b)
+	copy(p.bb.Bytes()[offset+HeaderSize:], b)
 }
 
 func (p *Page) GetString(offset int) string {
@@ -49,7 +59,7 @@ func (p *Page) SetString(offset int, s string) {
 
 func MaxLength(strlen int) int {
 	bytesPerChar := utf8.UTFMax
-	return 4 + strlen*bytesPerChar // 4 バイトは長さ用
+	return HeaderSize + strlen*bytesPerChar // 4 バイトは長さ用
 }
 
 func (p *Page) Contents() *bytes.Buffer {
