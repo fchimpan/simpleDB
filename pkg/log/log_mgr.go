@@ -78,7 +78,7 @@ func (lm *LogMgr) Append(rec []byte) (int, error) {
 	return lm.latestLNS, nil
 }
 
-// Flush は、指定された LSN までのログをディスクに書き込み
+// Flush は、指定された LSN までのログをディスクに書き込む
 // logPage を空にするわけではない
 func (lm *LogMgr) Flush(lsn int) error {
 	if lsn >= lm.lastSavedLNS {
@@ -88,4 +88,8 @@ func (lm *LogMgr) Flush(lsn int) error {
 		lm.lastSavedLNS = lm.latestLNS
 	}
 	return nil
+}
+
+func (lm *LogMgr) SetLogPageInt(offset int, value int) {
+	lm.logPage.SetInt(offset, value)
 }

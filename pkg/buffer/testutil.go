@@ -1,9 +1,10 @@
-package log
+package buffer
 
 import (
 	"testing"
 
 	"github.com/fchimpan/simpleDB/pkg/file"
+	"github.com/fchimpan/simpleDB/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,9 +22,9 @@ func setupFileMgr(t *testing.T, dir string) *file.FileMgr {
 	return fm
 }
 
-func setupLogMgr(t *testing.T, fm *file.FileMgr) *LogMgr {
+func setupLogMgr(t *testing.T, fm *file.FileMgr) *log.LogMgr {
 	t.Helper()
-	lm, err := NewLogMgr(fm, testLogFile)
+	lm, err := log.NewLogMgr(fm, testLogFile)
 	assert.NoError(t, err)
 	lm.SetLogPageInt(0, blockSize) // ヘッダーの境界を設定
 	return lm
