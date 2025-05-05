@@ -88,7 +88,8 @@ func TestBufferManager(t *testing.T) {
 		buf2.SetModifyingTx(2, 200)
 
 		// トランザクション1に関連するバッファのみフラッシュ
-		bm.FlushAll(txnum)
+		err = bm.FlushAll(txnum)
+		require.NoError(t, err, "FlushAll should not return an error")
 
 		// buf1はフラッシュされたのでModifyingTxは-1になっているはず
 		require.Equal(t, -1, buf1.ModifyingTx(), "フラッシュ後はModifyingTxが-1になる")

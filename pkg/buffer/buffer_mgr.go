@@ -40,7 +40,10 @@ func (bm *BufferManager) Pin(block *file.BlockID) (*Buffer, error) {
 
 	start := time.Now()
 	for {
-		buf := bm.tryToPin(block)
+		buf, err := bm.tryToPin(block)
+		if err != nil {
+			return nil, err
+		}
 		if buf != nil {
 			return buf, nil
 		}
@@ -55,26 +58,28 @@ func (bm *BufferManager) Pin(block *file.BlockID) (*Buffer, error) {
 	}
 }
 
-func (bm *BufferManager) tryToPin(block *file.BlockID) *Buffer {
+func (bm *BufferManager) tryToPin(block *file.BlockID) (*Buffer, error) {
 	// ブロックがすでにバッファにあれば再利用
 	if buf := bm.findExistingBuffer(block); buf != nil {
 		if !buf.IsPinned() {
 			bm.numAvailable--
 		}
 		buf.Pin()
-		return buf
+		return buf, nil
 	}
 	// 使えるバッファがなければ nil
 	buf := bm.chooseUnpinnedBuffer()
 	if buf == nil {
-		return nil
+		return nil, nil
 	}
 
 	// unpin されているバッファを使う
-	buf.ReadFromBlock(block)
+	if err := buf.ReadFromBlock(block); err != nil {
+		return nil, err
+	}
 	buf.Pin()
 	bm.numAvailable--
-	return buf
+	return buf, nil
 
 }
 
@@ -109,13 +114,16 @@ func (bm *BufferManager) Unpin(buf *Buffer) {
 }
 
 // 指定されたトランザクションIDによって変更されたすべてのバッファページをフラッシュ（ログ書き＋ディスク書き）
-func (bm *BufferManager) FlushAll(txnum int) {
+func (bm *BufferManager) FlushAll(txnum int) error {
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
 
 	for _, buf := range bm.bufferPool {
 		if buf.ModifyingTx() == txnum {
-			buf.Flush()
+			if err := buf.Flush(); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
